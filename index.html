@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOPFRP</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind CSS Configuration -->
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                'brand-blue': '#1D4ED8',
+                'brand-red': '#D32F2F',
+                'brand-green': '#2E7D32',
+                'brand-yellow': '#F59E0B',
+              }
+            }
+          }
+        }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Embedded CSS -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind's gray-50 */
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Modal styles */
+        .modal-backdrop {
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .modal-content {
+            animation: slideInUp 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* For scroll-triggered animations */
+        .invisible-for-animation {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+
+        /* Custom scrollbar for admin queue */
+        .max-h-96::-webkit-scrollbar {
+          width: 8px;
+        }
+        .max-h-96::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .max-h-96::-webkit-scrollbar-thumb {
+          background: #cbd5e1; /* Tailwind gray-300 */
+          border-radius: 10px;
+        }
+        .max-h-96::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8; /* Tailwind gray-400 */
+        }
+
+        /* Custom Notification styles */
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .notification {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateX(120%);
+            transition: transform 0.5s ease-in-out;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.bg-success {
+            background-color: var(--brand-green);
+        }
+        .notification.bg-error {
+            background-color: var(--brand-red);
+        }
+    </style>
+
+</head>
+<body class="text-gray-800">
+    <!-- Notification container -->
+    <div id="notification-container"></div>
+
+    <!-- Main application content, visible by default -->
+    <div id="main-content">
+        <header class="bg-white shadow-md sticky top-0 z-40">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <a href="#home" class="flex items-center space-x-2 nav-link">
+                         <svg class="h-8 w-auto text-brand-blue" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-1.01 6.01L13.41 10l-2.42 2.42c-.2.2-.51.2-.71 0l-1.42-1.42c-.2-.2-.2-.51 0-.71L10.29 8c.2-.2.51-.2.71 0zM11 14v-2h2v2h-2zm0 4v-2h2v2h-2z" fill-rule="evenodd" clip-rule="evenodd"/>
+                            <text x="12" y="17" font-family="Inter, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle">FS</text>
+                        </svg>
+                        <span class="text-xl font-bold text-brand-blue">National Online Payment Fraud Registry Portal </span>
+                    </a>
+                    <div class="hidden md:flex items-center space-x-6">
+                        <a href="#home" class="text-gray-600 hover:text-brand-blue font-medium nav-link">Home</a>
+                        <a href="#about" class="text-gray-600 hover:text-brand-blue font-medium nav-link">How It Works</a>
+                        <a href="#education" class="text-gray-600 hover:text-brand-blue font-medium nav-link">Fraud Awareness</a>
+                        <a href="#merchant" class="text-gray-600 hover:text-brand-blue font-medium nav-link">For Merchants</a>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a id="admin-view-link" href="#admin" class="hidden sm:inline-block text-sm text-gray-600 hover:text-brand-blue font-medium nav-link hidden">Admin View</a>
+                        <button id="login-logout-button" class="bg-brand-blue text-white px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity">Login</button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            
+            <div id="page-home" class="page active">
+                <section class="text-center bg-white p-8 rounded-xl shadow-lg animatable invisible-for-animation">
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-brand-blue">India's NOPAF for UPI Fraud.</h1>
+                    <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Check the fraud score of any UPI ID before you pay. Report scams in seconds.</p>
+                    
+                    <form id="upi-check-form" class="mt-8 max-w-xl mx-auto flex flex-col sm:flex-row items-center gap-3">
+                        <input id="upi-id-input" type="text" placeholder="Enter UPI ID or Phone Number" class="w-full px-5 py-3 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition">
+                        <button type="submit" class="w-full sm:w-auto bg-brand-blue text-white px-8 py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity flex-shrink-0">Check Score</button>
+                    </form>
+                    <div class="mt-4 flex justify-center">
+                         <label for="qr-upload-input" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors cursor-pointer flex items-center space-x-2">
+                            <span class="material-icons-outlined">qr_code_scanner</span>
+                            <span>Scan QR Code</span>
+                        </label>
+                        <input type="file" id="qr-upload-input" class="hidden" accept="image/*">
+                    </div>
+
+                </section>
+                
+                <section class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-2xl transition-shadow cursor-pointer animatable invisible-for-animation" onclick="showModal('report-fraud-modal')">
+                        <span class="material-icons-outlined text-5xl text-brand-blue">campaign</span>
+                        <h3 class="mt-2 text-xl font-bold">Report a Fraud</h3>
+                        <p class="text-gray-600">Help protect the community by reporting suspicious UPI IDs.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-2xl transition-shadow cursor-pointer animatable invisible-for-animation" style="animation-delay: 0.1s;">
+                        <span class="material-icons-outlined text-5xl text-brand-blue">timeline</span>
+                        <h3 class="mt-2 text-xl font-bold">Track a Complaint</h3>
+                        <p class="text-gray-600">Enter your complaint ID to see the latest status of your case.</p>
+                    </div>
+                     <a href="#dispute" class="nav-link bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-2xl transition-shadow cursor-pointer animatable invisible-for-animation" style="animation-delay: 0.2s;">
+                        <span class="material-icons-outlined text-5xl text-brand-blue">gavel</span>
+                        <h3 class="mt-2 text-xl font-bold">Dispute a Report</h3>
+                        <p class="text-gray-600">Believe your UPI ID was wrongly flagged? Start a review here.</p>
+                    </a>
+                </section>
+                
+                <section class="mt-10 bg-brand-blue text-white p-6 rounded-xl shadow-lg animatable invisible-for-animation">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="text-3xl font-bold">₹1,087 Cr+</p>
+                            <p class="text-sm opacity-80">Lost to Fraud in FY24</p>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold">1.34M+</p>
+                            <p class="text-sm opacity-80">Cases Reported in FY24</p>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold">500k+</p>
+                            <p class="text-sm opacity-80">UPI IDs Analyzed</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Result page content will be dynamically inserted here -->
+            <div id="page-result" class="page"></div>
+
+            <div id="page-about" class="page">
+                 <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-brand-blue text-center mb-6 animatable invisible-for-animation">How FraudScore India Works</h2>
+                    <div class="space-y-8">
+                        <div class="text-center animatable invisible-for-animation">
+                            <div class="flex justify-center items-center mx-auto w-16 h-16 rounded-full bg-blue-100 text-brand-blue">
+                                <span class="material-icons-outlined text-3xl">screen_search_desktop</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mt-4">1. Check (Prevent)</h3>
+                            <p class="text-gray-600 max-w-2xl mx-auto mt-2">Before making a payment to an unknown UPI ID, enter it into our portal. We provide an instant, real-time Fraud Score based on crowd-sourced data and verified reports from financial institutions.</p>
+                        </div>
+                         <div class="text-center animatable invisible-for-animation" style="animation-delay: 0.1s;">
+                            <div class="flex justify-center items-center mx-auto w-16 h-16 rounded-full bg-red-100 text-brand-red">
+                                <span class="material-icons-outlined text-3xl">report</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mt-4">2. Report (Contribute)</h3>
+                            <p class="text-gray-600 max-w-2xl mx-auto mt-2">If you've been a victim of a scam, report it through our simple, OTP-verified process. Your report immediately helps to flag the fraudulent ID, protecting others from falling for the same scam.</p>
+                        </div>
+                         <div class="text-center animatable invisible-for-animation" style="animation-delay: 0.2s;">
+                            <div class="flex justify-center items-center mx-auto w-16 h-16 rounded-full bg-green-100 text-brand-green">
+                                <span class="material-icons-outlined text-3xl">leaderboard</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mt-4">3. Track (Resolve)</h3>
+                            <p class="text-gray-600 max-w-2xl mx-auto mt-2">We provide a transparent timeline for your complaint, showing its journey from initial report to bank notification and cyber crime escalation. No more being left in the dark.</p>
+                        </div>
+                    </div>
+                    <div class="mt-12 p-6 bg-blue-50 border-l-4 border-brand-blue rounded-r-lg animatable invisible-for-animation">
+                        <h4 class="font-bold text-xl text-brand-blue">Our Commitment to Privacy</h4>
+                        <p class="text-gray-700 mt-2">We are built on trust. We NEVER store sensitive personal data like account balances or full transaction histories. Our system only analyzes UPI ID metadata to fight fraud, ensuring your identity remains secure and anonymous.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="page-education" class="page">
+                 <div class="space-y-8">
+                    <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-8 animatable invisible-for-animation">
+                        <div class="text-center md:text-left">
+                            <h2 class="text-3xl font-bold text-brand-blue">Stay Safe: Fraud Awareness</h2>
+                            <p class="text-gray-600 mt-2">Knowledge is your best defense against online scams. Learn to recognize the signs and protect your finances.</p>
+                            <button class="mt-4 bg-brand-blue text-white px-5 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity">Learn More</button>
+                        </div>
+                        <div class="flex-shrink-0 animate-float">
+                            <svg class="w-64 h-auto" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0" y="0" width="200" height="150" fill="#F0F4FF" rx="10"/>
+                                <path d="M75 120 C 70 120, 65 115, 65 110 L 65 50 C 65 45, 70 40, 75 40 L 125 40 C 130 40, 135 45, 135 50 L 135 110 C 135 115, 130 120, 125 120 Z" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="2"/>
+                                <rect x="75" y="50" width="50" height="50" fill="#E5E7EB"/>
+                                <path d="M95 70 C 95 67.2386, 97.2386 65, 100 65 C 102.761 65, 105 67.2386, 105 70 L 105 80 L 95 80 Z" fill="#A5B4FC"/>
+                                <circle cx="100" cy="90" r="5" fill="#A5B4FC"/>
+                                <path d="M115 60 C 115 57.2386, 117.239 55, 120 55 C 122.761 55, 125 57.2386, 125 60 L 125 70 C 125 72.7614, 122.761 75, 120 75 C 117.239 75, 115 72.7614, 115 70 Z" fill="#6366F1"/>
+                                <line x1="120" y1="75" x2="120" y2="85" stroke="#6366F1" stroke-width="2"/>
+                                <circle cx="120" cy="90" r="2" fill="#6366F1"/>
+                                <circle cx="50" cy="60" r="10" fill="#FBBF24"/>
+                                <circle cx="150" cy="90" r="15" fill="#34D399"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg animatable invisible-for-animation">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons-outlined text-brand-red p-2 bg-red-100 rounded-full">error_outline</span>
+                                <h3 class="font-bold text-xl">Common Scams</h3>
+                            </div>
+                            <ul class="mt-4 space-y-2 text-gray-700">
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-red text-lg mr-2">close</span>OTP Sharing</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-red text-lg mr-2">close</span>Fake QR Codes</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-red text-lg mr-2">close</span>Vishing Calls</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-red text-lg mr-2">close</span>Online Shopping Fraud</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg animatable invisible-for-animation" style="animation-delay: 0.1s;">
+                            <div class="flex items-center space-x-3">
+                                <span class="material-icons-outlined text-brand-green p-2 bg-green-100 rounded-full">check_circle_outline</span>
+                                <h3 class="font-bold text-xl">Golden Rules</h3>
+                            </div>
+                            <ul class="mt-4 space-y-2 text-gray-700">
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-green text-lg mr-2">check</span>Never Share OTP/PIN</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-green text-lg mr-2">check</span>Verify UPI IDs</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-green text-lg mr-2">check</span>Use Verified Merchants</li>
+                                <li class="flex items-center"><span class="material-icons-outlined text-brand-green text-lg mr-2">check</span>Check Transaction Details</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg animatable invisible-for-animation md:col-span-2 lg:col-span-1" style="animation-delay: 0.2s;">
+                            <div class="flex items-center space-x-3">
+                                 <span class="material-icons-outlined text-brand-blue p-2 bg-blue-100 rounded-full">smart_display</span>
+                                <h3 class="font-bold text-xl">Watch & Learn</h3>
+                            </div>
+                            <div class="mt-4 aspect-video bg-gray-200 rounded-lg flex items-center justify-center cursor-pointer">
+                                <span class="material-icons-outlined text-5xl text-gray-400">play_circle_filled</span>
+                            </div>
+                            <p class="text-center text-gray-600 mt-2 font-medium">How FraudScore Protects You</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg animatable invisible-for-animation">
+                        <h3 class="font-bold text-xl mb-4">Fraud Trends & Alerts</h3>
+                        <div class="bg-red-50 border-l-4 border-brand-red p-4 rounded-r-lg flex items-center space-x-3">
+                             <span class="material-icons-outlined text-brand-red">trending_up</span>
+                             <p class="font-medium">Alert: New 'Investment Scam' SMS Circulating. <a href="#" class="text-brand-blue underline">Learn more</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="page-merchant" class="page">
+                 <div class="bg-white p-8 rounded-xl shadow-lg animatable invisible-for-animation">
+                    <div class="flex flex-wrap justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-brand-blue">Merchant Dashboard</h2>
+                        <div class="flex items-center space-x-2 p-2 bg-green-100 text-brand-green rounded-lg">
+                             <span class="material-icons-outlined">verified_user</span>
+                             <span class="font-semibold">Status: FraudScore Verified</span>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 bg-gray-50 p-6 rounded-lg">
+                            <h3 class="font-bold text-xl">Your Trust Score</h3>
+                            <div class="flex items-center space-x-4 mt-4">
+                                <p class="text-6xl font-bold text-brand-green">3<span class="text-3xl text-gray-400">/100</span></p>
+                                <div>
+                                    <p class="font-bold text-2xl text-brand-green">Excellent</p>
+                                    <p class="text-gray-500">Your score has remained stable for 90 days.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-lg space-y-4">
+                              <div>
+                                <p class="text-3xl font-bold text-brand-blue">2,145</p>
+                                <p class="text-gray-600">UPI ID Checks This Month</p>
+                            </div>
+                              <div>
+                                <p class="text-3xl font-bold text-brand-blue">99.8%</p>
+                                <p class="text-gray-600">Positive Score Result</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="mt-6 bg-gray-50 p-6 rounded-lg">
+                        <h3 class="font-bold text-xl mb-4">Get Your Badge</h3>
+                        <p class="text-gray-600 mb-4">Build customer trust by displaying the "FraudScore Verified" badge on your website, payment links, or QR code stands.</p>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <img src="https://placehold.co/150x60/2E7D32/FFFFFF?text=FraudScore%0AVerified" alt="Verified Badge" class="rounded">
+                            <div>
+                                <p class="font-semibold">Embed this badge on your site:</p>
+                                <code class="block bg-gray-200 p-2 rounded-md text-sm mt-1 text-gray-700">&lt;img src="https://api.fraudscore.in/badge/YOUR_ID"&gt;</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-dispute" class="page">
+                 <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto animatable invisible-for-animation">
+                    <h2 class="text-3xl font-bold text-brand-blue text-center mb-2">Dispute a Fraud Report</h2>
+                    <p class="text-center text-gray-600 mb-6">If you believe your UPI ID has been incorrectly flagged, please provide the details below. Our team will review your case within 48 hours.</p>
+                    <form class="space-y-4">
+                        <div>
+                            <label for="dispute-upi" class="font-medium">Your UPI ID</label>
+                            <input id="dispute-upi" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+                        </div>
+                         <div>
+                            <label for="dispute-complaint" class="font-medium">Original Complaint ID (if known)</label>
+                            <input id="dispute-complaint" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+                        </div>
+                         <div>
+                            <label for="dispute-reason" class="font-medium">Reason for Dispute</label>
+                            <textarea id="dispute-reason" rows="4" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></textarea>
+                        </div>
+                         <div>
+                            <label for="dispute-evidence" class="font-medium">Upload Evidence (e.g., transaction screenshot)</label>
+                            <input id="dispute-evidence" type="file" class="w-full mt-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-blue hover:file:bg-blue-100">
+                        </div>
+                        <button type="submit" class="w-full bg-brand-blue text-white py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity">Submit for Review</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- This is the new page for high-value transactions -->
+            <div id="page-high-value" class="page">
+                 <div class="bg-white p-8 rounded-xl shadow-lg max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold text-brand-blue text-center mb-2">High-Value Transaction Report</h2>
+                    <p class="text-center text-gray-600 mb-6">For amounts of ₹10,000 or more, we require additional details for priority escalation.</p>
+                    <form id="high-value-form" class="space-y-6">
+                        <!-- Section 1: Incident Details -->
+                        <div>
+                             <h3 class="text-xl font-semibold border-b pb-2 mb-4">Incident Details</h3>
+                             <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="hv-upi-id" class="font-medium">Fraudulent UPI ID</label>
+                                    <input id="hv-upi-id" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                                </div>
+                                <div>
+                                    <label for="hv-amount" class="font-medium">Amount Lost (₹)</label>
+                                    <input id="hv-amount" type="number" class="w-full mt-1 p-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                                </div>
+                                <div>
+                                    <label for="hv-transaction-id" class="font-medium">Transaction ID</label>
+                                    <input id="hv-transaction-id" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                                 <div>
+                                    <label for="hv-transaction-date" class="font-medium">Date of Transaction</label>
+                                    <input id="hv-transaction-date" type="date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                             </div>
+                        </div>
+
+                        <!-- Section 2: Your Bank Details -->
+                        <div>
+                             <h3 class="text-xl font-semibold border-b pb-2 mb-4">Your Bank Details</h3>
+                             <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="hv-bank-name" class="font-medium">Your Bank Name</label>
+                                    <input id="hv-bank-name" type="text" placeholder="e.g., State Bank of India" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                                <div>
+                                    <label for="hv-bank-branch" class="font-medium">Bank Branch</label>
+                                    <input id="hv-bank-branch" type="text" placeholder="e.g., Mumbai Main Branch" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                                 <div>
+                                    <label for="hv-account-number" class="font-medium">Your Account Number</label>
+                                    <input id="hv-account-number" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                                 <div>
+                                    <label for="hv-ifsc-code" class="font-medium">IFSC Code</label>
+                                    <input id="hv-ifsc-code" type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" required>
+                                </div>
+                             </div>
+                        </div>
+
+
+                        <!-- Section 3: Description & Evidence -->
+                        <div>
+                            <h3 class="text-xl font-semibold border-b pb-2 mb-4">Description & Evidence</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="hv-fraud-category" class="font-medium">Type of Fraud</label>
+                                    <select id="hv-fraud-category" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+                                        <option>QR Code Scam</option>
+                                        <option>Product Not Delivered</option>
+                                        <option>OTP/Vishing Scam</option>
+                                        <option>Investment Scam</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="hv-fraud-description" class="font-medium">Detailed Description of Events</label>
+                                    <textarea id="hv-fraud-description" rows="4" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="Please provide a step-by-step account of what happened..." required></textarea>
+                                </div>
+                                <div>
+                                    <label for="hv-evidence" class="font-medium">Upload Evidence</label>
+                                    <input id="hv-evidence" type="file" class="w-full mt-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-blue hover:file:bg-blue-100" required>
+                                    <p class="text-xs text-gray-500 mt-1">A screenshot of the transaction is mandatory for high-value reports.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-brand-blue text-white py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity">Submit High-Value Report</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="page-admin" class="page">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-brand-blue mb-6 animatable invisible-for-animation">Admin Moderation Dashboard</h2>
+                    <div class="grid lg:grid-cols-4 gap-6">
+                        <div class="bg-blue-50 p-4 rounded-lg animatable invisible-for-animation">
+                            <p class="text-sm text-blue-600 font-semibold">New Reports (24h)</p>
+                            <p class="text-3xl font-bold text-brand-blue">1,204</p>
+                        </div>
+                        <div class="bg-yellow-50 p-4 rounded-lg animatable invisible-for-animation" style="animation-delay: 0.1s;">
+                            <p class="text-sm text-yellow-600 font-semibold">Pending Review</p>
+                            <p class="text-3xl font-bold text-brand-yellow">86</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg animatable invisible-for-animation" style="animation-delay: 0.2s;">
+                            <p class="text-sm text-red-600 font-semibold">Open Disputes</p>
+                            <p class="text-3xl font-bold text-brand-red">17</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg animatable invisible-for-animation" style="animation-delay: 0.3s;">
+                            <p class="text-sm text-green-600 font-semibold">Cases Resolved (24h)</p>
+                            <p class="text-3xl font-bold text-brand-green">982</p>
+                        </div>
+                    </div>
+
+                    <div class="grid lg:grid-cols-2 gap-6 mt-6">
+                        <div class="lg:col-span-1 animatable invisible-for-animation">
+                            <h3 class="font-bold text-xl mb-4">Pending Review Queue</h3>
+                            <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <p class="font-semibold">Complaint #84512</p>
+                                        <p class="text-sm text-gray-500">UPI: scammer@upi | Type: QR Code Scam</p>
+                                    </div>
+                                    <div class="space-x-2">
+                                        <button class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">Approve</button>
+                                        <button class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full">Reject</button>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <p class="font-semibold">Complaint #84511</p>
+                                        <p class="text-sm text-gray-500">UPI: fake@seller | Type: Product Scam</p>
+                                    </div>
+                                    <div class="space-x-2">
+                                        <button class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">Approve</button>
+                                        <button class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full">Reject</button>
+                                    </div>
+                                </div>
+                                 <div class="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <p class="font-semibold">Complaint #84510</p>
+                                        <p class="text-sm text-gray-500">UPI: otp@fraudster | Type: Vishing Scam</p>
+                                    </div>
+                                    <div class="space-x-2">
+                                        <button class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">Approve</button>
+                                        <button class="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full">Reject</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-1 animatable invisible-for-animation" style="animation-delay: 0.1s;">
+                            <h3 class="font-bold text-xl mb-4">Fraud Trends (Last 30 Days)</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <canvas id="fraudTrendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="report-fraud-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md modal-content">
+            <!-- Modal content is generated by JS -->
+        </div>
+    </div>
+
+    <!-- Hidden by default, shown by JS -->
+    <div id="page-login" style="display: none;" class="fixed inset-0 bg-gray-100 z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center">
+                <div class="flex justify-center items-center space-x-2 mb-6">
+                     <svg class="h-10 w-auto text-brand-blue" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-1.01 6.01L13.41 10l-2.42 2.42c-.2.2-.51.2-.71 0l-1.42-1.42c-.2-.2-.2-.51 0-.71L10.29 8c.2-.2.51-.2.71 0zM11 14v-2h2v2h-2zm0 4v-2h2v2h-2z" fill-rule="evenodd" clip-rule="evenodd"/>
+                        <text x="12" y="17" font-family="Inter, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle">FS</text>
+                    </svg>
+                   <span class="text-2xl font-bold text-brand-blue">FraudScore India</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">Admin Login</h2>
+                <p class="text-gray-500 mb-6">Please sign in to continue.</p>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                         <input type="text" placeholder="Username (e.g. admin)" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition">
+                    </div>
+                     <div>
+                         <input type="password" placeholder="Password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition">
+                    </div>
+                     <button type="submit" class="w-full bg-brand-blue text-white py-2 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity">Login</button>
+                </form>
+                <div class="mt-4">
+                    <a href="#" id="back-to-home-link" class="text-sm text-gray-600 hover:text-brand-blue">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embedded main.js -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    // State and element variables for login
+    let isLoggedIn = false;
+    const mainContent = document.getElementById('main-content');
+    const loginPage = document.getElementById('page-login');
+    const loginLogoutButton = document.getElementById('login-logout-button');
+    const loginForm = document.getElementById('login-form');
+    const backToHomeLink = document.getElementById('back-to-home-link');
+    const adminViewLink = document.getElementById('admin-view-link');
+
+    const pages = document.querySelectorAll('.page');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const upiCheckForm = document.getElementById('upi-check-form');
+    const resultPageContainer = document.getElementById('page-result');
+    const qrUploadInput = document.getElementById('qr-upload-input');
+    const notificationContainer = document.getElementById('notification-container');
+
+    // --- Custom Notification ---
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification bg-${type}`;
+        notification.textContent = message;
+        notificationContainer.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            // Remove from DOM after transition
+            notification.addEventListener('transitionend', () => notification.remove());
+        }, 3000);
+    }
+
+    // --- Login and Authentication Flow ---
+    function showLoginPage() {
+        mainContent.style.display = 'none';
+        loginPage.style.display = 'flex';
+    }
+
+    function hideLoginPage() {
+        loginPage.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
+
+    loginLogoutButton.addEventListener('click', () => {
+        if (isLoggedIn) {
+            // Logout logic
+            isLoggedIn = false;
+            loginLogoutButton.textContent = 'Login';
+            adminViewLink.classList.add('hidden');
+            showNotification('You have been logged out.');
+            showPage('home'); // Redirect to home page on logout
+        } else {
+            // Show login page
+            showLoginPage();
+        }
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // Simulate successful login
+        isLoggedIn = true;
+        loginLogoutButton.textContent = 'Logout';
+        adminViewLink.classList.remove('hidden');
+        hideLoginPage();
+        showPage('admin'); // Redirect to admin dashboard after login
+        showNotification('Login successful! Welcome.');
+    });
+
+    backToHomeLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideLoginPage();
+        showPage('home');
+    });
+
+    // --- Animation on Scroll Logic (FIXED: MOVED BEFORE SPA NAVIGATION) ---
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+
+    // --- SPA Navigation ---
+    function showPage(pageId) {
+        // "Navigation Guard" to protect the admin page
+        if (pageId === 'admin' && !isLoggedIn) {
+            showNotification('You must be logged in to view the admin page.', 'error');
+            // If not logged in, force navigation to the home page and stop
+            showLoginPage();
+            return; 
+        }
+
+        pages.forEach(page => {
+            page.classList.remove('active');
+        });
+
+        const activePage = document.getElementById(`page-${pageId}`);
+        if(activePage) {
+            activePage.classList.add('active');
+            // Trigger animations for the new page
+            const animatables = activePage.querySelectorAll('.animatable');
+            animatables.forEach(el => {
+                el.classList.add('invisible-for-animation'); // Reset for re-animation
+                observer.observe(el);
+            });
+        }
+        window.scrollTo(0, 0);
+        window.location.hash = pageId;
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = link.getAttribute('href').substring(1); // Remove '#'
+            showPage(pageId);
+        });
+    });
+
+    // Handle initial hash routing
+    const initialHash = window.location.hash.substring(1);
+    if (initialHash) {
+        showPage(initialHash);
+    } else {
+        showPage('home');
+    }
+
+    // --- UPI Score Check Logic ---
+    upiCheckForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const upiIdInput = document.getElementById('upi-id-input').value.toLowerCase().trim();
+        if (!upiIdInput) {
+            showNotification('Please enter a UPI ID or phone number.', 'error');
+            return;
+        }
+
+        let resultHtml = '';
+
+        // Detect if input is a phone number (simple 10-digit check)
+        const isPhoneNumber = /^\d{10}$/.test(upiIdInput);
+
+        if (isPhoneNumber) {
+            // Mock phone number results
+            if (upiIdInput === '9876543210') {
+                resultHtml = createResultCard('high-risk', upiIdInput);
+            } else if (upiIdInput === '9999999999') {
+                resultHtml = createResultCard('safe', upiIdInput);
+            } else {
+                resultHtml = createResultCard('no-data', upiIdInput);
+            }
+        } else {
+            // Existing UPI ID logic
+            if (upiIdInput.includes('scam') || upiIdInput.includes('fraud')) {
+                resultHtml = createResultCard('high-risk', upiIdInput);
+            } else if (upiIdInput.includes('safe') || upiIdInput.includes('merchant')) {
+                resultHtml = createResultCard('safe', upiIdInput);
+            } else {
+                resultHtml = createResultCard('no-data', upiIdInput);
+            }
+        }
+
+        resultPageContainer.innerHTML = resultHtml;
+        showPage('result');
+    });
+
+
+    function createResultCard(type, upiId) {
+        let content = {};
+        switch (type) {
+            case 'high-risk':
+                content = {
+                    bannerClass: 'bg-brand-red',
+                    icon: 'warning',
+                    title: 'HIGH RISK - FRAUD SUSPECTED',
+                    score: 85,
+                    scoreColor: 'text-brand-red',
+                    summary: `<p><span class="font-semibold">Total Reports:</span> 32 (Verified + User)</p><p><span class="font-semibold">Verified Flags:</span> 8 (Confirmed by Banks/Police)</p><p><span class="font-semibold">Last Reported:</span> October 1, 2025</p>`,
+                    activity: `<h4 class="font-semibold text-lg mt-6 mb-2">Recent Activity</h4><ul class="space-y-1 text-gray-600"><li>- Fake Product Scam</li><li>- OTP Vishing Scam</li><li>- QR Code Scam</li></ul>`,
+                    action: `<button onclick="showModal('report-fraud-modal')" class="w-full mt-6 bg-brand-red text-white py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity">I was also scammed by this ID</button>`
+                };
+                break;
+            case 'safe':
+                content = {
+                    bannerClass: 'bg-brand-green',
+                    icon: 'task_alt',
+                    title: 'LOW RISK - LOOKS SAFE',
+                    score: 4,
+                    scoreColor: 'text-brand-green',
+                    summary: `<p><span class="font-semibold">Total Reports:</span> 0</p><p><span class="font-semibold">Verified Since:</span> January 12, 2024</p>`,
+                    activity: `<div class="mt-6 p-4 bg-green-50 text-brand-green rounded-lg">This UPI ID has a clean record. Always practice safe transaction habits.</div>`,
+                    action: `<a href="#home" class="nav-link text-center w-full mt-6 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors">Back to Home</a>`
+                };
+                break;
+            case 'no-data':
+                content = {
+                    bannerClass: 'bg-brand-yellow',
+                    icon: 'info',
+                    title: 'CAUTION - NO DATA AVAILABLE',
+                    score: 'N/A',
+                    scoreColor: 'text-brand-yellow',
+                    summary: ``,
+                    activity: `<div class="mt-6 p-4 bg-yellow-50 text-yellow-800 rounded-lg">This UPI ID is new to our registry or has no transaction history reported. Please exercise caution when paying an unknown person for the first time.</div>`,
+                    action: `<a href="#home" class="nav-link text-center w-full mt-6 bg-gray-200 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors">Back to Home</a>`
+                };
+                break;
+        }
+
+        return `<div class="bg-white rounded-xl shadow-lg max-w-2xl mx-auto overflow-hidden visible"><div class="${content.bannerClass} text-white p-4 flex items-center justify-center space-x-2"><span class="material-icons-outlined">${content.icon}</span><h3 class="font-bold text-lg">${content.title}</h3></div><div class="p-6"><p class="text-center font-semibold text-xl break-words">${upiId} ${type === 'safe' ? '<span class="text-sm bg-green-100 text-brand-green p-1 rounded">Verified Merchant</span>' : ''}</p><div class="my-6 text-center"><p class="text-7xl font-bold ${content.scoreColor}">${content.score}</p><p class="text-gray-500">FraudScore</p></div><div class="text-gray-700 text-sm space-y-1">${content.summary}</div>${content.activity}${content.action}</div></div>`;
+    }
+
+    // --- Report Fraud Modal Logic ---
+    const reportFraudModal = document.getElementById('report-fraud-modal');
+    const modalContent = reportFraudModal.querySelector('.modal-content');
+
+    window.showModal = (modalId) => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'flex';
+            if (modalId === 'report-fraud-modal') renderModalStep(1);
+        }
+    };
+    
+    window.closeModal = () => { reportFraudModal.style.display = 'none'; }
+    reportFraudModal.addEventListener('click', (e) => { if (e.target === reportFraudModal) closeModal(); });
+    
+    function handleModalStep1Next() {
+        const upiInput = document.getElementById('fraud-upi-id-input');
+        const amountInput = document.getElementById('fraud-amount-input');
+        const amount = parseFloat(amountInput.value) || 0;
+
+        if (!upiInput.value || !amountInput.value) {
+            showNotification('Please fill in all fields.', 'error');
+            return;
+        }
+
+        if (amount >= 10000) {
+            closeModal();
+            // Prefill the high-value form
+            document.getElementById('hv-upi-id').value = upiInput.value;
+            document.getElementById('hv-amount').value = amount;
+            showPage('high-value');
+        } else {
+            renderModalStep(2);
+        }
+    }
+
+    window.renderModalStep = (step) => {
+        let html = '';
+        switch(step) {
+            case 1: 
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 1 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Fraud Details</h3><div class="space-y-4"><div><label class="font-medium">Fraudulent UPI ID</label><input type="text" id="fraud-upi-id-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div><div><label class="font-medium">Amount Lost (₹)</label><input type="number" id="fraud-amount-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="e.g., 5000"></div><div><label class="font-medium">Transaction ID</label><input type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div><div><label class="font-medium">Date of Transaction</label><input type="date" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div></div><div class="mt-6 flex space-x-2"><button onclick="closeModal()" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Cancel</button><button id="modal-step1-next" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Next</button></div></div>`; 
+                modalContent.innerHTML = html;
+                document.getElementById('modal-step1-next').addEventListener('click', handleModalStep1Next);
+                break;
+            case 2:
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 2 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Describe the Incident</h3><div class="space-y-4"><div><label for="fraud-category" class="font-medium">Type of Fraud</label><select id="fraud-category" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"><option>QR Code Scam</option><option>Product Not Delivered</option><option>OTP/Vishing Scam</option><option>Investment Scam</option><option>Other</option></select></div><div><label for="fraud-description" class="font-medium">Brief Description</label><textarea id="fraud-description" rows="3" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="Explain what happened..."></textarea></div></div><div class="mt-6 flex space-x-2"><button onclick="renderModalStep(1)" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Back</button><button onclick="renderModalStep(3)" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Next</button></div></div>`;
+                modalContent.innerHTML = html;
+                break;
+            case 3: 
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 3 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Bank Details</h3><div class="space-y-4"><div><label for="bank-name" class="font-medium">Your Bank Name</label><input type="text" id="bank-name" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="e.g., State Bank of India"></div><div><label for="bank-branch" class="font-medium">Bank Branch</label><input type="text" id="bank-branch" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="e.g., Mumbai Main Branch"></div><div><label for="account-number" class="font-medium">Your Account Number</label><input type="text" id="account-number" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div><div><label for="ifsc-code" class="font-medium">IFSC Code</label><input type="text" id="ifsc-code" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div></div><p class="text-xs text-gray-500 mt-2">This information is required by banks to process the fraud claim.</p><div class="mt-6 flex space-x-2"><button onclick="renderModalStep(2)" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Back</button><button onclick="renderModalStep(4)" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Next</button></div></div>`;
+                modalContent.innerHTML = html;
+                break;
+            case 4:
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 4 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Upload Evidence</h3><div class="space-y-2"><div><label for="fraud-evidence" class="font-medium">Upload Screenshot</label><input id="fraud-evidence" type="file" class="w-full mt-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-brand-blue hover:file:bg-blue-100"></div><p class="text-xs text-gray-500">Please upload a screenshot of the transaction, chat, or QR code. (Optional but recommended)</p></div><div class="mt-6 flex space-x-2"><button onclick="renderModalStep(3)" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Back</button><button onclick="renderModalStep(5)" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Next</button></div></div>`;
+                modalContent.innerHTML = html;
+                break;
+            case 5: 
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 5 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Your Contact</h3><div><label class="font-medium">Your 10-Digit Mobile Number</label><input type="tel" class="w-full mt-1 p-2 border border-gray-300 rounded-lg"></div><p class="text-xs text-gray-500 mt-2">For OTP verification and case updates only.</p><div class="mt-6 flex space-x-2"><button onclick="renderModalStep(4)" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Back</button><button onclick="renderModalStep(6)" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Get OTP</button></div></div>`; 
+                modalContent.innerHTML = html;
+                break;
+            case 6: 
+                html = `<div class="p-6"><p class="text-center text-sm text-gray-500 mb-2">Step 6 of 7</p><h3 class="text-2xl font-bold text-center mb-4">Verification</h3><div><label class="font-medium">Enter 6-Digit OTP</label><input type="text" class="w-full mt-1 p-2 border border-gray-300 rounded-lg text-center text-xl tracking-[.5em]"></div><p class="text-sm text-gray-500 mt-2 text-center">Resend OTP in 30s</p><div class="mt-6 flex space-x-2"><button onclick="renderModalStep(5)" class="w-1/2 bg-gray-200 py-2 rounded-lg font-semibold">Back</button><button onclick="renderModalStep(7)" class="w-1/2 bg-brand-blue text-white py-2 rounded-lg font-semibold">Submit</button></div></div>`; 
+                modalContent.innerHTML = html;
+                break;
+            case 7: 
+                html = `<div class="p-8 text-center"><span class="material-icons-outlined text-7xl text-brand-green">check_circle</span><h3 class="text-2xl font-bold mt-4">Complaint Filed!</h3><p class="text-gray-600 mt-2">Your Complaint ID is:</p><p class="font-bold text-lg bg-gray-100 p-2 rounded-md mt-1">FSIN-98127645</p><button onclick="closeModal()" class="w-full mt-6 bg-brand-blue text-white py-3 rounded-lg font-semibold">Done</button></div>`; 
+                modalContent.innerHTML = html;
+                break;
+        }
+    };
+    
+    document.getElementById('high-value-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        showNotification('High-value report submitted successfully!', 'success');
+        showPage('home');
+        e.target.reset(); // Clear the form
+    });
+
+
+    // --- Chart.js for Admin Dashboard ---
+    const ctx = document.getElementById('fraudTrendsChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'QR Code Scams',
+                    data: [65, 59, 80, 81],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true,
+                    tension: 0.2
+                }, {
+                    label: 'OTP/Vishing Scams',
+                    data: [28, 48, 40, 19],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true,
+                    tension: 0.2
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    document.querySelectorAll('.animatable').forEach(el => {
+        observer.observe(el);
+    });
+
+    // --- QR CODE UPLOAD LOGIC ---
+    qrUploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showNotification(`Simulating scan of: ${file.name}`);
+        let resultHtml = '';
+        if (file.name.toLowerCase().includes('scam')) {
+            resultHtml = createResultCard('high-risk', 'scanned-scammer@upi');
+        } else if (file.name.toLowerCase().includes('safe')) {
+            resultHtml = createResultCard('safe', 'scanned-safe@merchant');
+        } else {
+            resultHtml = createResultCard('no-data', 'scanned-new@user');
+        }
+        resultPageContainer.innerHTML = resultHtml;
+        showPage('result');
+        upiCheckForm.reset(); 
+    });
+
+
+});
+    </script>
+
+</body>
+</html>
+

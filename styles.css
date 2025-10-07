@@ -1,0 +1,110 @@
+/* Custom Styles to implement the design system */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc; /* Tailwind gray-50, a slightly softer white */
+}
+
+/* Define brand colors as CSS variables for easy reuse */
+:root {
+    --brand-blue: #0D47A1;
+    --brand-green: #2E7D32;
+    --brand-red: #C62828;
+    --brand-yellow: #FFAB00;
+}
+
+/* Tailwind CSS uses utility classes, but these can be helpful for JS or overrides */
+.bg-brand-blue { background-color: var(--brand-blue); }
+.text-brand-blue { color: var(--brand-blue); }
+.border-brand-blue { border-color: var(--brand-blue); }
+
+.bg-brand-green { background-color: var(--brand-green); }
+.text-brand-green { color: var(--brand-green); }
+
+.bg-brand-red { background-color: var(--brand-red); }
+.text-brand-red { color: var(--brand-red); }
+
+.bg-brand-yellow { background-color: var(--brand-yellow); }
+.text-brand-yellow { color: var(--brand-yellow); }
+
+/* SPA Page Visibility Control */
+.page {
+    display: none; /* All pages are hidden by default */
+}
+.page.active {
+    display: block; /* The active page is shown */
+}
+
+/* The login page is a full overlay, handled by JS */
+#page-login {
+    display: none;
+}
+
+.material-icons-outlined {
+    vertical-align: middle;
+}
+
+/* Modal Animation Styles */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes scaleIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.modal-backdrop { 
+    display: none;
+    animation: fadeIn 0.3s ease-out forwards; 
+}
+.modal-content { 
+    animation: scaleIn 0.3s ease-out forwards; 
+}
+
+/* Floating effect for illustrations */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+}
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
+/* Scroll-triggered animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Initial state for elements that will be animated on scroll */
+.invisible-for-animation {
+    opacity: 0;
+    /* transition is handled by JS adding the final class */
+}
+
+/* Final state class added by JS when element is visible */
+.animate-fadeInUp {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Custom scrollbar for admin queue (optional but nice) */
+.max-h-96::-webkit-scrollbar {
+  width: 8px;
+}
+.max-h-96::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.max-h-96::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Tailwind gray-300 */
+  border-radius: 10px;
+}
+.max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Tailwind gray-400 */
+}
